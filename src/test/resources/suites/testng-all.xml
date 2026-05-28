@@ -1,0 +1,13 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="Full Test Collection" verbose="1">
+
+    <listeners>
+        <listener class-name="test.listeners.AllureListener"/>
+    </listeners>
+
+    <suite-files>
+        <suite-file path="testng-smoke.xml"/>
+        <suite-file path="testng-regression.xml"/>
+    </suite-files>
+
+</suite>

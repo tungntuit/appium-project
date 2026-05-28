@@ -1,0 +1,9 @@
+target/
+allure-results/
+allure-report/
+*.class
+*.iml
+.idea/
+.DS_Store
+src/test/resources/apps/*.apk
+src/test/resources/apps/*.app

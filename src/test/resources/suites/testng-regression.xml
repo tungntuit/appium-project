@@ -1,0 +1,19 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="Regression Tests" verbose="1" thread-count="1">
+
+    <listeners>
+        <listener class-name="test.listeners.AllureListener"/>
+    </listeners>
+
+    <test name="Regression">
+        <groups>
+            <run>
+                <include name="regression"/>
+            </run>
+        </groups>
+        <packages>
+            <package name="test.tests"/>
+        </packages>
+    </test>
+
+</suite>

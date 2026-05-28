@@ -1,0 +1,16 @@
+[
+  {
+    "source":      "Tài khoản thanh toán",
+    "amount":      "500000",
+    "description": "Chuyen tien test 1",
+    "receiver":    "0123456789",
+    "bank":        "Sacombank"
+  },
+  {
+    "source":      "Thẻ Sacombank",
+    "amount":      "200000",
+    "description": "Chuyen tien test 2",
+    "receiver":    "0987654321",
+    "bank":        "Sacombank"
+  }
+]

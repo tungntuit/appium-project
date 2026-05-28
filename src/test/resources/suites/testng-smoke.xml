@@ -1,0 +1,19 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="Smoke Tests" verbose="1" thread-count="1">
+
+    <listeners>
+        <listener class-name="test.listeners.AllureListener"/>
+    </listeners>
+
+    <test name="Smoke">
+        <groups>
+            <run>
+                <include name="smoke"/>
+            </run>
+        </groups>
+        <packages>
+            <package name="test.tests"/>
+        </packages>
+    </test>
+
+</suite>

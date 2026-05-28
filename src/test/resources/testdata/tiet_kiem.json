@@ -1,0 +1,14 @@
+[
+  {
+    "source":      "Tài khoản thanh toán",
+    "amount":      "1000000",
+    "term":        "1 tháng",
+    "renewalType": "Không tái tục"
+  },
+  {
+    "source":      "Tài khoản thanh toán",
+    "amount":      "2000000",
+    "term":        "3 tháng",
+    "renewalType": "Tự động tái tục vốn & lãi"
+  }
+]
