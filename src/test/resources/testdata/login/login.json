@@ -1,0 +1,9 @@
+[
+  {
+    "username":        "0901234567",
+    "password":        "123456",
+    "expectedResult":  "success",
+    "errorMessage_vi": "",
+    "errorMessage_en": ""
+  }
+]

@@ -9,17 +9,26 @@ public class ConfigReader {
     private static final Properties props = new Properties();
 
     static {
-        try (InputStream is = ConfigReader.class
-                .getClassLoader()
-                .getResourceAsStream("config.properties")) {
-            if (is == null) throw new RuntimeException("Không tìm thấy config.properties");
+        // 1. Load default (device settings, appium URL, timing)
+        load("config/default.properties");
+
+        // 2. Load profile — truyền qua: mvn test -Dprofile=sit-dev-1
+        //    Nếu không truyền thì dùng sit-dev-1 làm mặc định
+        String profile = System.getProperty("profile", "sit-dev-1");
+        load("config/" + profile + ".properties");
+    }
+
+    private static void load(String path) {
+        try (InputStream is = ConfigReader.class.getClassLoader().getResourceAsStream(path)) {
+            if (is == null) throw new RuntimeException("Không tìm thấy: " + path);
             props.load(is);
         } catch (IOException e) {
-            throw new RuntimeException("Lỗi đọc config.properties: " + e.getMessage());
+            throw new RuntimeException("Lỗi đọc " + path + ": " + e.getMessage());
         }
     }
 
     public static String get(String key) {
+        // System property luôn được ưu tiên cao nhất
         String sysProp = System.getProperty(key);
         if (sysProp != null) return sysProp;
 

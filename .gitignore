@@ -5,5 +5,8 @@ allure-report/
 *.iml
 .idea/
 .DS_Store
+.vscode/
+.allure/
+*.html
 src/test/resources/apps/*.apk
 src/test/resources/apps/*.app

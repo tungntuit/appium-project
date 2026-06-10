@@ -6,43 +6,47 @@ import io.appium.java_client.android.nativekey.KeyEvent;
 import io.appium.java_client.android.options.UiAutomator2Options;
 import io.appium.java_client.service.local.AppiumDriverLocalService;
 import io.appium.java_client.service.local.AppiumServiceBuilder;
-import org.testng.ITestResult;
 import org.testng.annotations.*;
 import test.config.ConfigReader;
 import test.driver.DriverManager;
 import test.listeners.AllureListener;
 import test.locale.LocaleManager;
-import test.pages.CommonPage;
-import test.pages.HomePage;
-import test.pages.IntroPage;
-import test.pages.LoginPage;
-import test.pages.MPassPage;
-import test.pages.OTPPage;
-import test.pages.AccountPage;
-import test.locale.Keyword;
+import test.pages.PruLoginPage;
 
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.Duration;
 
 @Listeners(AllureListener.class)
 public class BaseTest {
 
     private static AppiumDriverLocalService service;
 
+    // Override trong LoginTest để skip auto-login
+    protected boolean requiresLogin() {
+        return true;
+    }
+
     @BeforeSuite
     public void globalSetup() {
-        defineEnv();
         startAppiumServer();
     }
 
-    private void defineEnv() {
-        String env = System.getProperty("env");
-        if (env == null) {
-            env = ConfigReader.get("env");
-        }
+    private void defineEnv(Method method) {
+        String pkg = method.getDeclaringClass().getPackage().getName();
+        boolean isAndroid = !pkg.contains(".ios");
+        boolean isEnglish = pkg.endsWith(".en");
+
+        String env;
+        if      (isAndroid && isEnglish)  env = "androidEng";
+        else if (isAndroid && !isEnglish) env = "androidVn";
+        else if (!isAndroid && isEnglish) env = "iOSEng";
+        else                              env = "iOSVn";
+
         System.setProperty("env", env);
         LocaleManager.init(env);
-        System.out.println("Env: " + env);
+        System.out.println("Environment: " + env + " (" + pkg + ")");
     }
 
     private void startAppiumServer() {
@@ -55,188 +59,49 @@ public class BaseTest {
     }
 
     @BeforeMethod
-    public void setUpDriver() {
+    public void setUpDriver(Method method) {
+        defineEnv(method);
+
         UiAutomator2Options options = new UiAutomator2Options();
         options.setDeviceName(ConfigReader.get("device.name"));
+        options.setUdid(ConfigReader.get("device.udid"));
         options.setPlatformVersion(ConfigReader.get("platform.version"));
         options.setAppPackage(ConfigReader.get("app.package"));
         options.setAppActivity(ConfigReader.get("app.activity"));
         options.setNoReset(true);
         options.setAutoGrantPermissions(true);
+        options.setAppWaitDuration(Duration.ofSeconds(15));
 
         try {
             AndroidDriver driver = new AndroidDriver(
                     new URL(ConfigReader.get("appium.server.url")), options);
+            driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(3));
             DriverManager.setDriver(driver);
+            System.out.println("Driver ready: " + ConfigReader.get("app.package"));
         } catch (MalformedURLException e) {
             throw new RuntimeException("Appium URL sai: " + e.getMessage());
         }
 
-        setupAndroid();
+        if (requiresLogin()) {
+            appSetup();
+        }
     }
 
-    private void setupAndroid() {
-        CommonPage  commonPage  = new CommonPage();
-        IntroPage   introPage   = new IntroPage();
-        LoginPage   loginPage   = new LoginPage();
-        MPassPage   mpassPage   = new MPassPage();
-        OTPPage     otpPage     = new OTPPage();
-        HomePage    homePage    = new HomePage();
-        AccountPage accountPage = new AccountPage();
-
-        if (commonPage.isExisted(Keyword.LANGUAGE, 5)) {
-            commonPage.tapTextView(Keyword.LANGUAGE);
-            commonPage.tapTextView(Keyword.CONTINUE);
-        }
-
-        commonPage.tapIfExisted(Keyword.LOG_IN, 2);
-
-        introPage.tapDangNhap();
-        loginPage.inputSDT(ConfigReader.get("sdt"));
-        loginPage.tapTiepTheo();
-        mpassPage.inputMPass(
-                ConfigReader.get("mpass"),
-                ConfigReader.get("identify.id"),
-                ConfigReader.get("dob")
-        );
-        mpassPage.tapXacThucSMSOTP();
-
-        if (commonPage.isExisted(Keyword.ENTER_OTP, 10)) {
-            otpPage.chooseOtpOption("hardcode");
-        }
-
-        if (commonPage.isExisted(Keyword.DISMISS, 3)) {
-            commonPage.tapTextView(Keyword.DISMISS);
-        }
-        if (commonPage.isExisted(Keyword.CLOSE, 3)) {
-            commonPage.tapTextView(Keyword.CLOSE);
-        }
-
-        handleLinkAccountPopup(commonPage);
-
-        homePage.tapIconAvatar();
-        handleAccountManagement(commonPage, homePage, accountPage);
-
-        System.out.println("setupAndroid() hoàn thành — env: " + System.getProperty("env"));
-    }
-
-    private void handleLinkAccountPopup(CommonPage commonPage) {
-        boolean hasLink  = commonPage.isExisted(Keyword.LINK_CURRENT_ACCOUNT,   5);
-        boolean hasAdd   = commonPage.isExisted(Keyword.ADD_CURRENT_ACCOUNT,    5);
-        boolean hasLink1 = commonPage.isExisted(Keyword.LINK_CURRENT_ACCOUNT_1, 2);
-
-        if (hasLink || hasAdd || hasLink1) {
-            if (commonPage.isExisted(Keyword.LINK_CURRENT_ACCOUNT,   3)) commonPage.tapTextView(Keyword.LINK_CURRENT_ACCOUNT);
-            if (commonPage.isExisted(Keyword.ADD_CURRENT_ACCOUNT,    3)) commonPage.tapTextView(Keyword.ADD_CURRENT_ACCOUNT);
-            if (commonPage.isExisted(Keyword.LINK_CURRENT_ACCOUNT_1, 3)) commonPage.tapTextView(Keyword.LINK_CURRENT_ACCOUNT_1);
-        }
-
-        pressBack();
-        hardWait(3);
-        pressBack();
-    }
-
-    private void handleAccountManagement(CommonPage commonPage, HomePage homePage, AccountPage accountPage) {
-        boolean hasLink = commonPage.isExisted(Keyword.LINK_CURRENT_ACCOUNT, 5);
-        boolean hasAdd  = commonPage.isExisted(Keyword.ADD_CURRENT_ACCOUNT,  5);
-
-        if (hasLink || hasAdd) {
-            themTheVaTaiKhoan(commonPage, accountPage);
-            pressBack();
-            returnToHome(commonPage);
-        } else {
-            homePage.tapIconAvatar();
-            accountPage.tapIconQLTVTK();
-
-            String env = System.getProperty("env");
-            boolean isEnglish = env.contains("Eng");
-            var elements = DriverManager.getDriver().findElements(
-                    isEnglish ? accountPage.getAvailableBalanceEN() : accountPage.getAvailableBalanceVN()
-            );
-
-            if (elements.size() == 1) {
-                themTheVaTaiKhoan(commonPage, accountPage);
-                pressBack();
-            }
-
-            pressBack();
-            returnToHome(commonPage);
-        }
+    private void appSetup() {
+        PruLoginPage loginPage = new PruLoginPage();
+        loginPage.ensureLanguage();
+        loginPage.login(ConfigReader.get("sdt"), ConfigReader.get("mpass"));
     }
 
     @AfterMethod(alwaysRun = true)
-    public void afterEachTest(ITestResult result) {
-        try {
-            backToHome();
-        } catch (Exception e) {
-            System.out.println("backToHome() exception: " + e.getMessage());
-        }
-
-        if (result.getStatus() == ITestResult.FAILURE) {
-            System.out.println("FAILED: " + result.getName());
-        }
-
+    public void tearDownDriver() {
         AndroidDriver driver = DriverManager.getDriver();
         if (driver != null) {
+            try {
+                driver.terminateApp(ConfigReader.get("app.package"));
+            } catch (Exception ignored) {}
             driver.quit();
             DriverManager.removeDriver();
-        }
-    }
-
-    private void backToHome() {
-        CommonPage commonPage = new CommonPage();
-        MPassPage  mpassPage  = new MPassPage();
-        int time = 0;
-
-        while (true) {
-            try {
-                pressBack();
-
-                if (commonPage.isExisted(Keyword.BIOMETRIC_LOGIN, 3)) {
-                    commonPage.tapTextView(Keyword.REGISTER_LATER);
-                }
-
-                if (commonPage.isExisted(Keyword.LOANS,     3) ||
-                    commonPage.isExisted(Keyword.DISCOVERY, 3)) {
-                    System.out.println("Đã về Home sau " + time + " lần");
-                    break;
-                }
-
-                if      (commonPage.isExisted(Keyword.BACK_TO_TRANSACTION,      2)) commonPage.tapTextView(Keyword.BACK_TO_TRANSACTION);
-                else if (commonPage.isExisted(Keyword.BACK_HOME,                2)) commonPage.tapTextView(Keyword.BACK_HOME);
-                else if (commonPage.isExisted(Keyword.BACK_TO_HOME,             2)) commonPage.tapTextView(Keyword.BACK_TO_HOME);
-                else if (commonPage.isExisted(Keyword.BACK_TO_HOME1,            2)) commonPage.tapTextView(Keyword.BACK_TO_HOME1);
-                else if (commonPage.isExisted(Keyword.BACK_TO_HOME2,            2)) commonPage.tapTextView(Keyword.BACK_TO_HOME2);
-                else if (commonPage.isExisted(Keyword.BACK_TO_TRANSACTION_PAGE, 2)) commonPage.tapTextView(Keyword.BACK_TO_TRANSACTION_PAGE);
-                else if (commonPage.isExisted(Keyword.CANCEL_TRANSACTION, 2)) {
-                    commonPage.tapTextView(Keyword.CONTINUE);
-                }
-                else if (commonPage.isExisted(Keyword.CLOSE, 1)) {
-                    commonPage.tapTextView(Keyword.CLOSE);
-                }
-                else if (commonPage.isExisted(Keyword.CHANGE_ACCOUNT, 2) ||
-                         commonPage.isExisted(Keyword.TXT_PASSWORD,   2)) {
-                    mpassPage.inputMPass(
-                            ConfigReader.get("mpass"),
-                            ConfigReader.get("identify.id"),
-                            ConfigReader.get("dob")
-                    );
-                }
-
-                time++;
-                System.out.println("backToHome attempt: " + time);
-
-                if (time >= 5) {
-                    System.out.println("Timeout backToHome — restart app");
-                    restartApp();
-                    break;
-                }
-
-            } catch (Exception e) {
-                System.out.println("backToHome exception: " + e.getMessage());
-                restartApp();
-                break;
-            }
         }
     }
 
@@ -258,27 +123,5 @@ public class BaseTest {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-    }
-
-    private void restartApp() {
-        try {
-            AndroidDriver driver = DriverManager.getDriver();
-            String pkg = ConfigReader.get("app.package");
-            driver.terminateApp(pkg);
-            driver.activateApp(pkg);
-            System.out.println("App restarted: " + pkg);
-        } catch (Exception e) {
-            System.out.println("restartApp exception: " + e.getMessage());
-        }
-    }
-
-    private void returnToHome(CommonPage commonPage) {
-        pressBack();
-        hardWait(3);
-        pressBack();
-    }
-
-    private void themTheVaTaiKhoan(CommonPage commonPage, AccountPage accountPage) {
-        // TODO: implement thêm thẻ và tài khoản
     }
 }

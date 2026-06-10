@@ -1,0 +1,20 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="Prudential Tests" verbose="1" thread-count="1">
+
+    <listeners>
+        <listener class-name="test.listeners.AllureListener"/>
+    </listeners>
+
+    <test name="Vietnamese">
+        <packages>
+            <package name="test.tests.vi"/>
+        </packages>
+    </test>
+
+    <test name="English">
+        <packages>
+            <package name="test.tests.en"/>
+        </packages>
+    </test>
+
+</suite>

@@ -4,6 +4,8 @@ public enum Keyword {
 
     // ── Button ────────────────────────────────────────────────────────────────────
     LANGUAGE                ("English",                          "Tiếng Việt",                        "English",                           "Tiếng Việt"),
+    LANG_PICKER_VN          ("Vietnamese",                       "Tiếng Việt",                        "Vietnamese",                        "Tiếng Việt"),
+    LANG_PICKER_EN          ("English",                          "Tiếng Anh",                         "English",                           "Tiếng Anh"),
     CONTINUE                ("Continue",                         "Tiếp tục",                          "Continue",                          "Tiếp tục"),
     NEXT                    ("Next",                             "Tiếp theo",                         "Next",                              "Tiếp theo"),
     CLOSE                   ("Close",                            "Đóng",                              "Close",                             "Đóng"),

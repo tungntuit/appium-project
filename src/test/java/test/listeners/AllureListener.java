@@ -36,12 +36,15 @@ public class AllureListener implements ITestListener {
         System.out.println("  Thời gian bắt đầu: " + LocalDateTime.now().format(FORMATTER));
 
         lifecycle.updateTestCase(testResult -> {
-            testResult.getLabels().add(new Label()
-                .withName("env")
-                .withValue(System.getProperty("env", "unknown")));
-            testResult.getLabels().add(new Label()
-                .withName("device")
-                .withValue(System.getProperty("device.name", "emulator")));
+            Label envLabel = new Label();
+            envLabel.setName("env");
+            envLabel.setValue(System.getProperty("env", "unknown"));
+            testResult.getLabels().add(envLabel);
+
+            Label deviceLabel = new Label();
+            deviceLabel.setName("device");
+            deviceLabel.setValue(System.getProperty("device.name", "emulator"));
+            testResult.getLabels().add(deviceLabel);
         });
     }
 
@@ -68,12 +71,12 @@ public class AllureListener implements ITestListener {
         Allure.addAttachment("Error Log", "text/plain", result.getThrowable().getMessage());
         Allure.addAttachment("Test Info", "text/plain", buildTestInfo(result, elapsed, "FAILED"));
 
-        lifecycle.updateTestCase(testResult ->
-            testResult.setStatusDetails(new StatusDetails()
-                .withMessage(result.getThrowable().getMessage())
-                .withTrace(getStackTrace(result.getThrowable()))
-            )
-        );
+        lifecycle.updateTestCase(testResult -> {
+            StatusDetails sd = new StatusDetails();
+            sd.setMessage(result.getThrowable().getMessage());
+            sd.setTrace(getStackTrace(result.getThrowable()));
+            testResult.setStatusDetails(sd);
+        });
     }
 
     @Override

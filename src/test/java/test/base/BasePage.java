@@ -5,6 +5,8 @@ import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.PointerInput;
+import org.openqa.selenium.interactions.Sequence;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import test.config.ConfigReader;
@@ -13,6 +15,7 @@ import test.locale.Keyword;
 import test.locale.LocaleManager;
 
 import java.time.Duration;
+import java.util.List;
 
 public class BasePage {
 
@@ -31,6 +34,7 @@ public class BasePage {
 
     protected void sendKeys(By locator, String text) {
         WebElement el = wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
+        el.click();
         el.clear();
         el.sendKeys(text);
     }
@@ -89,19 +93,94 @@ public class BasePage {
                     "new UiScrollable(new UiSelector().scrollable(true))" +
                     ".scrollIntoView(new UiSelector().text(\"" + text + "\"))"
             ));
-        } catch (Exception e) {
-            // Element có thể đã visible, không cần scroll
+        } catch (Exception ignored) {
+            try {
+                driver.findElement(AppiumBy.androidUIAutomator(
+                        "new UiScrollable(new UiSelector().scrollable(true))" +
+                        ".scrollIntoView(new UiSelector().description(\"" + text + "\"))"
+                ));
+            } catch (Exception e) {
+                // Element có thể đã visible, không cần scroll
+            }
         }
     }
 
     protected By byText(Keyword keyword) {
         String text = LocaleManager.get(keyword);
-        return By.xpath("//*[@text='" + text + "']");
+        return byDynamicText(text);
     }
 
     protected By byTextBilingual(Keyword keyword) {
         String vn = keyword.androidVn();
         String en = keyword.androidEng();
-        return By.xpath("//*[@text='" + vn + "' or @text='" + en + "']");
+        return By.xpath(
+            "//*[@text='" + vn + "' or @text='" + en + "'" +
+            " or @content-desc='" + vn + "' or @content-desc='" + en + "']"
+        );
+    }
+
+    // ── Dynamic locators — truyền text vào, không cần hardcode locator ──────────
+
+    protected By byDynamicText(String text) {
+        return By.xpath("//*[@text='" + text + "' or @content-desc='" + text + "']");
+    }
+
+    protected By byDynamicButton(String label) {
+        return By.xpath(
+            "//*[(@text='" + label + "' or @content-desc='" + label + "')" +
+            " and (@clickable='true' or @class='android.widget.Button')]"
+        );
+    }
+
+    protected By byDynamicInput(String hint) {
+        return By.xpath(
+            "//*[@class='android.widget.EditText'" +
+            " and (@text='" + hint + "' or @hint='" + hint + "')]"
+        );
+    }
+
+    protected void tapByText(String text) {
+        scrollToText(text);
+        click(byDynamicText(text));
+    }
+
+    protected void tapByKeyword(Keyword keyword) {
+        tapByText(LocaleManager.get(keyword));
+    }
+
+    // ── Swipe / Scroll gestures ──────────────────────────────────────────────
+
+    protected void swipe(int startX, int startY, int endX, int endY) {
+        PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger1");
+        Sequence sequence = new Sequence(finger, 1)
+                .addAction(finger.createPointerMove(Duration.ZERO, PointerInput.Origin.viewport(), startX, startY))
+                .addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()))
+                .addAction(finger.createPointerMove(Duration.ofMillis(800), PointerInput.Origin.viewport(), endX, endY))
+                .addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
+        driver.perform(List.of(sequence));
+    }
+
+    protected void swipeUp() {
+        int width  = driver.manage().window().getSize().width;
+        int height = driver.manage().window().getSize().height;
+        swipe(width / 2, (int)(height * 0.7), width / 2, (int)(height * 0.3));
+    }
+
+    protected void swipeDown() {
+        int width  = driver.manage().window().getSize().width;
+        int height = driver.manage().window().getSize().height;
+        swipe(width / 2, (int)(height * 0.3), width / 2, (int)(height * 0.7));
+    }
+
+    protected void swipeLeft() {
+        int width  = driver.manage().window().getSize().width;
+        int height = driver.manage().window().getSize().height;
+        swipe((int)(width * 0.8), height / 2, (int)(width * 0.2), height / 2);
+    }
+
+    protected void swipeRight() {
+        int width  = driver.manage().window().getSize().width;
+        int height = driver.manage().window().getSize().height;
+        swipe((int)(width * 0.2), height / 2, (int)(width * 0.8), height / 2);
     }
 }
